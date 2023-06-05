@@ -1,0 +1,5 @@
+{
+  "items": [
+     {"name": "Oikos Dashboard", "action": "./start.sh"}
+  ]
+}

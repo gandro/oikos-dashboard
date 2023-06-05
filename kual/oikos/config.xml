@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension>
+	<information>
+		<name>Oikos Dashboard</name>
+		<author>Oikos Project Contributors</author>
+		<id>oikos-dashboard</id>
+	</information>
+	<menus>
+		<menu type="json" dynamic="true">menu.json</menu>
+	</menus>
+</extension>
