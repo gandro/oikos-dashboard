@@ -46,7 +46,7 @@ fn rotate(target: &usvg::Node, rotation: Rotation, tree: &mut usvg::Tree) -> Opt
         None => target.clone(),
     };
 
-    // rotation cordinates are absolute, correct for parent transformations:
+    // rotation coordinates are absolute, correct for parent transformations:
     let (origin_x, origin_y) = target.abs_transform().get_translate();
 
     let center = center.calculate_bbox()?;
