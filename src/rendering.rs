@@ -1,10 +1,9 @@
 use std::path::PathBuf;
 
-use anyhow::format_err;
 use log::debug;
-use resvg::FitTo;
+use tiny_skia::IntSize;
 use tiny_skia::Pixmap;
-use usvg::{fontdb, ScreenSize};
+use usvg::fontdb;
 use usvg::{NodeExt, NodeKind, Transform, TreeParsing, TreeTextToPath};
 
 use crate::document::{self, Alignment, Arguments, Document, Horizontal, Orientation, Rotation, Vertical};
@@ -26,7 +25,7 @@ fn align(target: &usvg::Node, alignment: Alignment, tree: &mut usvg::Tree) -> Op
                 Horizontal::Center => (anchor.width() - target.width()) / 2.,
                 Horizontal::Right => anchor.width() - target.width(),
             };
-            Some(Transform::new_translate(x + offset, 0.))
+            Some(Transform::from_translate(x + offset, 0.))
         }
         Orientation::Vertical(vertical) => {
             let y = anchor.y() - target.y();
@@ -35,7 +34,7 @@ fn align(target: &usvg::Node, alignment: Alignment, tree: &mut usvg::Tree) -> Op
                 Vertical::Middle => (anchor.height() - target.height()) / 2.,
                 Vertical::Bottom => anchor.height() - target.height(),
             };
-            Some(Transform::new_translate(0., y + offset))
+            Some(Transform::from_translate(0., y + offset))
         }
     }
 }
@@ -47,15 +46,14 @@ fn rotate(target: &usvg::Node, rotation: Rotation, tree: &mut usvg::Tree) -> Opt
     };
 
     // rotation coordinates are absolute, correct for parent transformations:
-    let (origin_x, origin_y) = target.abs_transform().get_translate();
+    let abs = target.abs_transform();
+    let (origin_x, origin_y) = (abs.tx, abs.ty);
 
     let center = center.calculate_bbox()?;
     let x = center.x() + center.width() / 2. - origin_x;
     let y = center.y() + center.height() / 2. - origin_y;
 
-    let mut transform = Transform::default();
-    transform.rotate_at(rotation.angle, x, y);
-    Some(transform)
+    Some(Transform::from_rotate_at(rotation.angle as f32, x, y))
 }
 
 pub fn perform(op: document::Operation, tree: &mut usvg::Tree) {
@@ -70,13 +68,13 @@ pub fn perform(op: document::Operation, tree: &mut usvg::Tree) {
 
     if let Some(transform) = transform {
         let mut target = target.borrow_mut();
-        match *target {
+        let t = match *target {
             NodeKind::Group(ref mut e) => &mut e.transform,
             NodeKind::Path(ref mut e) => &mut e.transform,
             NodeKind::Image(ref mut e) => &mut e.transform,
             NodeKind::Text(ref mut e) => &mut e.transform,
-        }
-        .append(&transform);
+        };
+        *t = t.post_concat(transform);
     }
 }
 
@@ -92,12 +90,12 @@ pub struct Configuration {
 pub struct Renderer {
     opts: usvg::Options,
     fonts: fontdb::Database,
-    screen_size: Option<ScreenSize>,
+    screen_size: Option<IntSize>,
 }
 
 impl Renderer {
     pub fn from_config(c: Configuration) -> Renderer {
-        let screen_size = c.screen_size.and_then(|(x, y)| ScreenSize::new(x, y));
+        let screen_size = c.screen_size.and_then(|(x, y)| IntSize::from_wh(x, y));
 
         let mut fonts = fontdb::Database::new();
         if c.system_fonts {
@@ -120,26 +118,26 @@ impl Renderer {
     }
 
     pub fn render(&self, doc: Document) -> Result<Pixmap, anyhow::Error> {
-        let (svg_data, operations) = doc.prepare()?;
+        let rtree = {
+            let (svg_data, operations) = doc.prepare()?;
+            debug!("Rendering document with {} queued operations", operations.len());
+            let mut tree = usvg::Tree::from_data(&svg_data, &self.opts)?;
 
-        debug!("Rendering document with {} queued operations", operations.len());
-        let mut tree = usvg::Tree::from_data(&svg_data, &self.opts)?;
+            tree.convert_text(&self.fonts);
 
-        tree.convert_text(&self.fonts);
+            for op in operations {
+                perform(op, &mut tree);
+            }
 
-        for op in operations {
-            perform(op, &mut tree);
-        }
-
-        let (pixmap_size, fit_to) = match self.screen_size {
-            Some(size) => (size, FitTo::Size(size.width(), size.height())),
-            None => (tree.size.to_screen_size(), FitTo::Original),
+            resvg::Tree::from_usvg(&tree)
         };
-
-        let mut pixmap = Pixmap::new(pixmap_size.width(), pixmap_size.height()).expect("invalid bitmap size");
-        resvg::render(&tree, fit_to, tiny_skia::Transform::default(), pixmap.as_mut())
-            .ok_or(format_err!("Failed fit and render image"))?;
-
+        let pixmap_size = match self.screen_size {
+            Some(size) => size,
+            None => rtree.size.to_int_size(),
+        };
+        let mut pixmap =
+            tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).expect("invalid bitmap size");
+        rtree.render(Transform::default(), &mut pixmap.as_mut());
         Ok(pixmap)
     }
 }
