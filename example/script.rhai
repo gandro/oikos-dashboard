@@ -32,7 +32,7 @@ fn format_weekdate(date) {
 
 fn format_number(n) {
     if n < 10 {
-        `$0{n}`
+        `0${n}`
     } else {
         `${n}`
     }
