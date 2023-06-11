@@ -20,6 +20,8 @@ pub enum Error {
     DuplicatedId(String),
     #[error("Operation not supported on empty selection")]
     EmptySelection,
+    #[error("Operation not supported by this element: <{0}>")]
+    ElementNotSupported(String),
     #[error("Operation can only be performed on singelton selection")]
     SingletonRequired,
 }
@@ -129,6 +131,26 @@ pub struct Document {
     selection: Rc<Vec<Path>>,
 }
 
+// Based on https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform
+static SUPPORTS_TRANSFORM: &'static [&'static str] = &[
+    "a",
+    "circle",
+    "clipPath",
+    "defs",
+    "ellipse",
+    "foreignObject",
+    "g",
+    "image",
+    "line",
+    "path",
+    "polygon",
+    "polyline",
+    "rect",
+    "switch",
+    "text",
+    "use",
+];
+
 fn label_nodes<'root>(root: &'root mut Element) -> Result<String, Error> {
     // first pass: collect all known element ids and detect duplicates
     let mut known_ids = HashSet::<String>::new();
@@ -224,6 +246,11 @@ impl Document {
 
         let mut shared = self.shared.borrow_mut();
         for node in &*self.selection {
+            let tag = node.resolve_in(&shared.root)?.tag().name();
+            if !SUPPORTS_TRANSFORM.contains(&tag) {
+                return Err(Error::ElementNotSupported(tag.to_string()));
+            }
+
             shared.ops.push(Operation {
                 target: node.target.to_owned(),
                 args: Arguments::Alignment(Alignment {
@@ -250,6 +277,11 @@ impl Document {
 
         let mut shared = self.shared.borrow_mut();
         for node in &*self.selection {
+            let tag = node.resolve_in(&shared.root)?.tag().name();
+            if !SUPPORTS_TRANSFORM.contains(&tag) {
+                return Err(Error::ElementNotSupported(tag.to_string()));
+            }
+
             shared.ops.push(Operation {
                 target: node.target.to_owned(),
                 args: Arguments::Rotation(Rotation {
