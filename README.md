@@ -118,9 +118,16 @@ Kindle.
   5. Copy the KUAL extension from the `kual/` folder into the `extensions` folder
      in your USB mass storage root, e.g. `cp -r kual/oikos /mnt/us/extensions/`
 
+#### Screenshots of KUAL Extension
+
 <img src="docs/images/kual.png"
   alt="Screenshot of the Oikos KUAL extension"
-  width="300" height="400">
+  width="300" height="400"
+/> <img
+  src="kual/oikos/splash.png"
+  alt="Oikos Dashboard running on a Kindle 4"
+  width="300" height="400"
+/>
 
 ## Supported Devices
 
