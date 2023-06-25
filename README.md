@@ -8,7 +8,12 @@ script and renders the resulting SVG into a Linux framebuffer or a PNG file.
 
 <img src="docs/images/oikos-on-kindle.jpg"
   alt="Oikos Dashboard running on a Kindle 4"
-  width="484" height="646">
+  width="300" height="400"
+/> <img
+  src="docs/images/example.png"
+  alt="Oikos Dashboard running on a Kindle 4"
+  width="300" height="400"
+/>
 
 ## Usage
 
@@ -23,11 +28,8 @@ cargo run -- example/template.svg --script example/script.rhai --image example/o
 
 This will load the `template.svg` file from the the `example` folder as a
 template, fill it in with the instructions provided by the `example/script.rhai`
-script, and render the final result as a PNG image into `example/output.png`:
-
-<img src="docs/images/example.png"
-  alt="Oikos Dashboard running on a Kindle 4"
-  width="300" height="400">
+script, and render the final result as a PNG image into `example/output.png` as
+shown in the screenshots section above.
 
 ### Command-line arguments
 
