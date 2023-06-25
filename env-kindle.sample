@@ -1,0 +1,21 @@
+# Render image into Kindle eInk display via framebuffer
+OIKOS_FRAMEBUFFER=1
+
+# Use SVG template and Rhai script from local folder
+OIKOS_TEMPLATE=template.svg
+OIKOS_SCRIPT=script.rhai
+
+# Re-run script and re-render image every 5 minutes
+OIKOS_SLEEP=5m
+# Suspend to memory while sleeping.
+OIKOS_SUSPEND=1
+# On the Kindle, only rtc1 (pmic_rtc) has the wake alarm
+OIKOS_WAKEUP_RTC=/dev/rtc1
+# Wait for network connectivity after waking up from suspend
+OIKOS_WAIT_FOR_NETWORK=http://example.com
+
+# After waking up, pressing the Home button will return to KUAL
+OIKOS_EXIT_ON_KEYPRESS=KEY_HOME
+
+# Custom time zone to use for script datetime
+TZ=UTC
