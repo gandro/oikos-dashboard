@@ -1,13 +1,16 @@
 use std::fmt::Debug;
 use std::fs;
 
+use std::path::Path;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
+use anyhow::bail;
 use anyhow::{format_err, Context};
 use log::debug;
+use log::error;
 use tiny_skia::Pixmap;
 
 use crate::document::Document;
@@ -117,6 +120,60 @@ fn sleeper_from_opts(sleep: opts::Sleep) -> Result<Sleeper, anyhow::Error> {
     Ok(sleeper)
 }
 
+enum ControlFlow {
+    Continue,
+    Exit,
+}
+
+fn run(
+    template: &[u8],
+    template_path: &Path,
+    wait_for_network: &Option<WaitForNetwork>,
+    script: &Option<Script>,
+    renderer: &Renderer,
+    canvas: &mut Canvas,
+    sleeper: &Option<Sleeper>,
+) -> Result<ControlFlow, anyhow::Error> {
+    // Parse document template
+    let mut doc = Document::from_bytes(template)
+        .with_context(|| format!("Failed to load template {:?}", template_path.to_string_lossy()))?;
+
+    // Wait for network before running script
+    if let Some(w) = wait_for_network {
+        w.wait_for_network()?;
+    }
+
+    // Manipulate document tree with user script
+    if let Some(script) = script {
+        doc = match script.run_with_document(doc) {
+            Ok(doc) => doc,
+            Err(err) if err.is_catchable() && sleeper.is_some() => {
+                error!("Uncaught script error: {}", err);
+                return Ok(ControlFlow::Continue);
+            }
+            Err(err) => bail!("Failed to execute script: {}", err),
+        };
+    }
+
+    // Render and draw document
+    let bitmap = renderer.render(doc).context("Failed to render document")?;
+    canvas.draw(bitmap)?;
+
+    // Sleep or exit
+    let Some(sleeper) = sleeper else {
+        return Ok(ControlFlow::Exit);
+    };
+
+    debug!("Sleeping for {:?}", sleeper.duration());
+    let wakeup_reason = sleeper.wait().context("Failed to sleep")?;
+    if let WakeupReason::ExitKeyPressed(code) = wakeup_reason {
+        debug!("Key {} pressed. Exiting", code);
+        return Ok(ControlFlow::Exit);
+    }
+
+    Ok(ControlFlow::Continue)
+}
+
 fn main() -> Result<(), anyhow::Error> {
     dotenvy::dotenv().ok();
     env_logger::init();
@@ -125,6 +182,7 @@ fn main() -> Result<(), anyhow::Error> {
     // Template options
     debug!("Loading document: {:?}", &opts.template);
     let template = fs::read(&opts.template)?;
+    let template_path = opts.template.as_path();
 
     // Output options
     let mut canvas = Canvas::from_opts(opts.output)?;
@@ -155,36 +213,20 @@ fn main() -> Result<(), anyhow::Error> {
     });
 
     loop {
-        // Parse document template
-        let mut doc = Document::from_bytes(&template)
-            .with_context(|| format!("Failed to load template {:?}", opts.template.to_string_lossy()))?;
+        let res = run(
+            &template,
+            template_path,
+            &wait_for_network,
+            &script,
+            &renderer,
+            &mut canvas,
+            &sleeper,
+        );
 
-        // Wait for network before running script
-        if let Some(w) = &wait_for_network {
-            w.wait_for_network()?;
-        }
-
-        // Manipulate document tree with user script
-        if let Some(script) = &script {
-            doc = script
-                .run_with_document(doc)
-                .map_err(|e| format_err!("Failed to execute script: {}", e))?;
-        }
-
-        // Render and draw document
-        let bitmap = renderer.render(doc).context("Failed to render document")?;
-        canvas.draw(bitmap)?;
-
-        // Sleep or exit
-        if let Some(sleeper) = &sleeper {
-            debug!("Sleeping for {:?}", sleeper.duration());
-            let wakeup_reason = sleeper.wait().context("Failed to sleep")?;
-            if let WakeupReason::ExitKeyPressed(code) = wakeup_reason {
-                debug!("Key {} pressed. Exiting", code);
-                break;
-            };
-        } else {
-            break;
+        match res {
+            Ok(ControlFlow::Continue) => continue,
+            Ok(ControlFlow::Exit) => break,
+            Err(err) => return Err(err),
         }
     }
 
