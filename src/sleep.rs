@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::{self, Write};
 use std::os::fd::{AsRawFd, RawFd};
+use std::thread;
 use std::time::Duration;
 
 use log::debug;
@@ -23,14 +24,6 @@ pub enum Error {
     SuspendError(#[from] io::Error),
 }
 
-fn suspend() -> Result<(), Error> {
-    OpenOptions::new()
-        .write(true)
-        .open("/sys/power/state")?
-        .write_all(b"mem")?;
-    Ok(())
-}
-
 #[derive(Clone, Debug)]
 pub enum WakeupReason {
     IntervalTick,
@@ -42,6 +35,7 @@ pub struct Sleeper {
     duration: Duration,
     wakeup_keys: HashMap<RawFd, KeyDevice>,
     suspend: bool,
+    suspend_grace: Duration,
 }
 
 impl Sleeper {
@@ -51,6 +45,7 @@ impl Sleeper {
             duration: duration,
             wakeup_keys: HashMap::new(),
             suspend: false,
+            suspend_grace: Default::default(),
         }
     }
 
@@ -66,8 +61,25 @@ impl Sleeper {
         self
     }
 
+    pub fn suspend_grace(&mut self, period: Duration) -> &mut Self {
+        self.suspend_grace = period;
+        self
+    }
+
     pub fn duration(&self) -> Duration {
         self.duration
+    }
+
+    fn suspend_to_memory(&self) -> Result<(), Error> {
+        debug!("Waiting {:?} before suspending to memory", self.suspend_grace);
+
+        thread::sleep(self.suspend_grace);
+        OpenOptions::new()
+            .write(true)
+            .open("/sys/power/state")?
+            .write_all(b"mem")?;
+
+        Ok(())
     }
 
     pub fn wait(&self) -> Result<WakeupReason, Error> {
@@ -79,8 +91,7 @@ impl Sleeper {
         }
 
         if self.suspend {
-            debug!("Suspending to memory");
-            suspend()?;
+            self.suspend_to_memory()?;
         }
 
         loop {

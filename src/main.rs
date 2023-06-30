@@ -109,6 +109,7 @@ fn sleeper_from_opts(sleep: opts::Sleep) -> Result<Sleeper, anyhow::Error> {
     let mut sleeper = Sleeper::new(sleep.duration, ticker);
     if sleep.suspend {
         sleeper.suspend(true);
+        sleeper.suspend_grace(sleep.suspend_grace);
     }
     if let Some(e) = sleep.exit_on_keypress {
         let key_devices = KeyDeviceBuilder::with_keys(e.keys)

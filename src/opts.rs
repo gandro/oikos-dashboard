@@ -54,6 +54,7 @@ pub struct ExitOnKeypress {
 pub struct Sleep {
     pub duration: Duration,
     pub suspend: bool,
+    pub suspend_grace: Duration,
     pub wakeup_rtc: PathBuf,
     pub exit_on_keypress: Option<ExitOnKeypress>,
 }
@@ -68,6 +69,12 @@ fn sleep() -> impl Parser<Option<Sleep>> {
         .env("OIKOS_SUSPEND")
         .help("Suspend to RAM while sleeping")
         .switch();
+    let suspend_grace = long("suspend-grace-period")
+        .env("OIKOS_SUSPEND_GRACE_PERIOD")
+        .help("Wait for this grace period to elapse before suspending to RAM")
+        .argument::<String>("DURATION")
+        .fallback(String::from("3s"))
+        .parse(|s| humantime::parse_duration(&s));
     let wakeup_rtc = long("wakeup-rtc")
         .env("OIKOS_WAKEUP_RTC")
         .help("RTC device to wake-up while suspended (default: /dev/rtc0)")
@@ -93,6 +100,7 @@ fn sleep() -> impl Parser<Option<Sleep>> {
     construct!(Sleep {
         duration,
         suspend,
+        suspend_grace,
         wakeup_rtc,
         exit_on_keypress,
     })

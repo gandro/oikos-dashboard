@@ -1,11 +1,10 @@
 use std::borrow::Cow;
 use std::ffi::CStr;
 use std::fs::{File, OpenOptions};
+use std::io;
 use std::mem::MaybeUninit;
 use std::os::unix::io::AsRawFd;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
-use std::{io, thread};
 
 use bitflags::bitflags;
 use log::debug;
@@ -16,8 +15,6 @@ use tiny_skia::{ColorU8, Pixmap};
 use self::sys::{fb_fix_screeninfo, fb_var_screeninfo};
 
 mod sys;
-
-const EINK_REFRESH_WAIT: Duration = Duration::from_millis(1000);
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -331,8 +328,6 @@ impl Framebuffer {
             unsafe {
                 sys::fbio_eink_update_display(self.dev.as_raw_fd(), fx as std::ffi::c_int)?;
             }
-
-            thread::sleep(EINK_REFRESH_WAIT);
         }
 
         self.draw_count += 1;
