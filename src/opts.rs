@@ -105,7 +105,7 @@ fn sleep() -> impl Parser<Option<Sleep>> {
         exit_on_keypress,
     })
     .guard(
-        |s| s.duration >= Duration::from_secs(30) || s.suspend,
+        |s| s.duration >= Duration::from_secs(30) || !s.suspend,
         "Suspend to RAM requires a --sleep duration of at least 30 seconds",
     )
     .group_help("Sleep:")
