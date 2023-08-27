@@ -7,7 +7,7 @@ use std::time::Duration;
 use log::debug;
 use nix::poll::{poll, PollFd, PollFlags};
 use nix::sys::time::TimeSpec;
-use nix::sys::timerfd::{TimerFd, TimerFlags, ClockId, TimerSetTimeFlags, Expiration};
+use nix::sys::timerfd::{ClockId, Expiration, TimerFd, TimerFlags, TimerSetTimeFlags};
 use thiserror::Error;
 
 use crate::evdev::{self, KeyCode, KeyDevice};
@@ -73,9 +73,9 @@ impl Sleeper {
 
     fn set_suspend_timer(&self, pollfd: &mut Vec<PollFd>) -> Result<(bool, Option<TimerFd>), Error> {
         if !self.suspend {
-            return Ok((false, None))
+            return Ok((false, None));
         } else if self.suspend_grace.is_zero() {
-            return Ok((true, None))
+            return Ok((true, None));
         }
 
         debug!("Waiting {:?} before suspending to memory", self.suspend_grace);

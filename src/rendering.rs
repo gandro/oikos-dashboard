@@ -58,8 +58,8 @@ fn rotate(target: &usvg::Node, rotation: Rotation, tree: &mut usvg::Tree) -> Opt
 
 pub fn perform(op: document::Operation, tree: &mut usvg::Tree) {
     let Some(target) = tree.node_by_id(&op.target) else {
-            return;
-        };
+        return;
+    };
 
     let transform = match op.args {
         Arguments::Alignment(a) => align(&target, a, tree),

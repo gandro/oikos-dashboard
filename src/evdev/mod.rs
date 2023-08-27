@@ -76,7 +76,7 @@ impl KeyDeviceBuilder {
             let path = path?;
             let dev = KeyDevice::open(&path)?;
             let Some(dev) = dev.with_filter(self.keys.iter().copied())? else {
-                continue
+                continue;
             };
 
             if log::log_enabled!(log::Level::Debug) {
