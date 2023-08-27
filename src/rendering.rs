@@ -74,7 +74,7 @@ pub fn perform(op: document::Operation, tree: &mut usvg::Tree) {
             NodeKind::Image(ref mut e) => &mut e.transform,
             NodeKind::Text(ref mut e) => &mut e.transform,
         };
-        *t = t.post_concat(transform);
+        *t = t.pre_concat(transform);
     }
 }
 
