@@ -1,0 +1,24 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Display Rust version
+        run: |
+          cargo --version --verbose
+          rustc --version
+      - name: Format
+        run: |
+          cargo fmt -- --check
+      - name: Test
+        run: |
+          cargo check
+          cargo test
