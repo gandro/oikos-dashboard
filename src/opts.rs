@@ -73,7 +73,7 @@ fn sleep() -> impl Parser<Option<Sleep>> {
         .env("OIKOS_SUSPEND_GRACE_PERIOD")
         .help("Wait for this grace period to elapse before suspending to RAM")
         .argument::<String>("DURATION")
-        .fallback(String::from("3s"))
+        .fallback(String::from("1s"))
         .parse(|s| humantime::parse_duration(&s));
     let wakeup_rtc = long("wakeup-rtc")
         .env("OIKOS_WAKEUP_RTC")
