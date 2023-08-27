@@ -108,6 +108,10 @@ fn sleep() -> impl Parser<Option<Sleep>> {
         |s| s.duration >= Duration::from_secs(30) || !s.suspend,
         "Suspend to RAM requires a --sleep duration of at least 30 seconds",
     )
+    .guard(
+        |s| s.suspend_grace < s.duration,
+        "Suspend grace period may not be longer than overall suspend time",
+    )
     .group_help("Sleep:")
     .optional()
 }
