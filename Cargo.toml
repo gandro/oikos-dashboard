@@ -24,7 +24,7 @@ nix = { version = "0.26.2", default-features = false, features = ["ioctl", "poll
 png = "0.17.10"
 rand = "0.8.5"
 resvg = "0.35.0"
-rhai = "1.15.1"
+rhai = "1.16.1"
 thiserror = "1.0.48"
 tiny-skia = "0.10.0" # resvg v0.35 requires tiny_skia v0.10
 tz-rs = "0.6.14"
