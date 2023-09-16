@@ -33,7 +33,7 @@ ureq = "2.7.1"
 usvg = "0.35.0"
 
 [build-dependencies]
-bindgen = "0.66.1"
+bindgen = "0.68.1"
 prettyplease = "0.2.15"
 quote = "1.0.33"
 syn = "2.0.32"
