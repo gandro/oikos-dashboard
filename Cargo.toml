@@ -10,7 +10,7 @@ strip = true
 
 [dependencies]
 anyhow = "1.0.75"
-bitflags = "2.4.0"
+bitflags = "2.4.1"
 bpaf = "0.9.5"
 dotenvy = "0.15.7"
 elementtree = "1.2.3"
