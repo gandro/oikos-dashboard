@@ -30,7 +30,7 @@ tiny-skia = "0.10.0" # resvg v0.35 requires tiny_skia v0.10
 tz-rs = "0.6.14"
 tzdb = "0.5.7"
 ureq = "2.9.1"
-usvg = "0.35.0"
+usvg = "0.37.0"
 
 [build-dependencies]
 bindgen = "0.68.1"
