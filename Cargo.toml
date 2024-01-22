@@ -11,7 +11,7 @@ strip = true
 [dependencies]
 anyhow = "1.0.75"
 bitflags = "2.4.1"
-bpaf = "0.9.5"
+bpaf = "0.9.9"
 dotenvy = "0.15.7"
 elementtree = "1.2.3"
 env_logger = "0.10.0"
